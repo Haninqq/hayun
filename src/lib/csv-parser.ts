@@ -14,13 +14,13 @@ export function parseCSV(): HAICRecord[] {
     transformHeader: (header: string) => header.trim(),
   });
 
-  const records: HAICRecord[] = result.data
-    .filter((row: Record<string, string>) => {
+  const records: HAICRecord[] = (result.data as Record<string, string>[])
+    .filter((row) => {
       // 빈 행 또는 협업 강도가 없는 행 필터링
       const level = row['AI 협업 강도']?.trim();
       return level && ['High', 'Medium', 'Low'].includes(level);
     })
-    .map((row: Record<string, string>) => ({
+    .map((row) => ({
       직무단위: (row['직무 단위'] || '').trim(),
       업무단위: (row['업무(기능) 단위'] || '').trim(),
       동사키워드: (row['동사 키워드 정리'] || '').trim(),
