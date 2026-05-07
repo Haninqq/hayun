@@ -1,65 +1,106 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
+import { experimental_useObject as useObject } from '@ai-sdk/react';
+import { z } from 'zod';
+import { HAICInputSection } from '@/components/haic-input-section';
+import { HAICResultSection } from '@/components/haic-result-section';
+import { AnalysisResult } from '@/lib/types';
+
+const guideSchema = z.object({
+  aiTasks: z.array(z.string()),
+  humanTasks: z.array(z.string()),
+  direction: z.string(),
+  effect: z.string(),
+  tools: z.array(z.object({
+    name: z.string(),
+    description: z.string(),
+    tag: z.string()
+  })),
+  education: z.array(z.object({
+    title: z.string(),
+    description: z.string(),
+    tags: z.array(z.string())
+  }))
+});
 
 export default function Home() {
+  const [jobInput, setJobInput] = useState('');
+  const [taskInput, setTaskInput] = useState('');
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
+    null
+  );
+  const [isLoading, setIsLoading] = useState(false);
+
+  const {
+    object: aiGuide,
+    submit,
+    isLoading: isStreaming,
+  } = useObject({
+    api: '/api/guide',
+    schema: guideSchema,
+  });
+
+  const handleSubmit = async () => {
+    if (!jobInput.trim() || !taskInput.trim()) return;
+
+    setIsLoading(true);
+    setAnalysisResult(null);
+
+    try {
+      // 1. CSV 검색 API 호출
+      const searchResponse = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job: jobInput, task: taskInput }),
+      });
+
+      if (!searchResponse.ok) {
+        const error = await searchResponse.json();
+        throw new Error(error.error || '분석에 실패했습니다.');
+      }
+
+      const { result } = await searchResponse.json();
+      setAnalysisResult(result);
+      setIsLoading(false);
+
+      // 2. AI 가이드 스트리밍 호출
+      submit({
+        job: jobInput,
+        task: taskInput,
+        level: result.record.협업강도,
+        evidence: result.record.협업강도근거,
+      });
+    } catch (error) {
+      console.error('Submit error:', error);
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="flex flex-col items-center min-h-screen">
+      {/* Background Pattern */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[oklch(0.7_0.18_270_/_0.04)] rounded-full blur-[120px]" />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-[oklch(0.6_0.15_220_/_0.04)] rounded-full blur-[100px]" />
+      </div>
+
+      <HAICInputSection
+        jobInput={jobInput}
+        taskInput={taskInput}
+        isLoading={isLoading}
+        onJobChange={setJobInput}
+        onTaskChange={setTaskInput}
+        onSubmit={handleSubmit}
+      />
+
+      <HAICResultSection
+        result={analysisResult}
+        jobInput={jobInput}
+        taskInput={taskInput}
+        aiGuide={aiGuide}
+        isStreaming={isStreaming}
+      />
     </div>
   );
 }
