@@ -43,7 +43,7 @@ export function HAICInputSection({
           Collaboration Guide
         </h1>
         <p className="text-muted-foreground text-sm md:text-base max-w-md mx-auto leading-relaxed">
-          직무와 업무를 입력하면 AI 협업 강도를 판별하고
+          직무와 업무를 입력하면 AI 협업 유형을 판별하고
           <br />
           최적의 협업 가이드를 제공합니다.
         </p>
