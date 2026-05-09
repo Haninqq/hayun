@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'HAIC Guide — Human-AI Collaboration Guide',
   description:
-    '직무와 업무를 입력하면 AI 협업 강도를 판별하고, 최적의 인간-AI 협업 가이드를 제공합니다.',
+    '직무와 업무를 입력하면 AI 협업 유형을 판별하고, 최적의 인간-AI 협업 가이드를 제공합니다.',
 };
 
 export default function RootLayout({
